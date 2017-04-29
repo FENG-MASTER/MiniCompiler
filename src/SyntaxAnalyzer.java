@@ -1,4 +1,6 @@
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by qianzise on 2017/4/29 0029.
@@ -6,8 +8,10 @@ import java.io.*;
 public class SyntaxAnalyzer {
     private BufferedReader reader = null;
 
+    private List<Integer> fileLines=new ArrayList<>();
+
     private int token;
-    private int len=0;
+    private int len=1;
 
     public void openLexFile() {
         File file = new File(LexicalAnalysis.FILE);
@@ -26,16 +30,19 @@ public class SyntaxAnalyzer {
      * 获取下一个taken
      */
     private void getNextTaken() {
-        try {
+
+        if (len<=fileLines.size()){
+            token=fileLines.get(len-1);
             len++;
-            String s = reader.readLine();
-            token = Integer.parseInt(s.substring(17));
-            if (checkFor("EOLN",false,false)){
-                getNextTaken();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        }else {
+            readFromFile();
+            getNextTaken();
         }
+
+        if (checkFor("EOLN",false,false)){
+            getNextTaken();
+        }
+
     }
 
     /**
@@ -75,8 +82,12 @@ public class SyntaxAnalyzer {
      */
     private void funcA(){
         if(checkFor(";",false,true)){
-            declarativeStatement();
-            funcA();
+            if (checkFor("integer",false,false)){
+                declarativeStatement();
+                funcA();
+            }else {
+                back();
+            }
         }
     }
 
@@ -85,10 +96,12 @@ public class SyntaxAnalyzer {
      * <说明语句>→<变量说明>│<函数说明>
      */
     private void declarativeStatement() {
-        if (checkFor("integer",false,false)){
-            variableDeclaration();
-        }else {
-            functionalDeclaration();
+        if (checkFor("integer")) {
+            if (checkFor("function",false,false)){
+                functionalDeclaration();
+            }else {
+                variableDeclaration();
+            }
         }
     }
 
@@ -96,9 +109,9 @@ public class SyntaxAnalyzer {
      * <变量说明>→integer <变量>
      */
     private void variableDeclaration() {
-        if (checkFor("integer")){
+
             var();
-        }
+
     }
 
     /**
@@ -114,7 +127,7 @@ public class SyntaxAnalyzer {
      * <函数说明>→integer function <标识符>（<参数>）；<函数体>
      */
     private void functionalDeclaration() {
-        if (checkFor("integer")){
+
             if (checkFor("function")){
                 if (checkFor("symbol")){
                     if (checkFor("(")){
@@ -127,7 +140,7 @@ public class SyntaxAnalyzer {
                     }
                 }
             }
-        }
+
     }
 
     /**
@@ -176,7 +189,7 @@ public class SyntaxAnalyzer {
         }else if(checkFor("write",false,false)){
             write();
         }else if (checkFor("if",false,false)){
-            conditionExpression();
+            conditionalStatement();
         }else {
             assignmentStatement();
         }
@@ -247,7 +260,7 @@ public class SyntaxAnalyzer {
     }
 
     private void funcC(){
-        if (checkFor("*",false,false)){
+        if (checkFor("*",false,true)){
             term();
             funcC();
         }
@@ -257,10 +270,22 @@ public class SyntaxAnalyzer {
      * <因子>→<变量>│<常数>│<函数调用>
      */
     private void factor() {
-        if (checkFor("symbol",false,false)||checkFor("const",false,false)){
+        if (checkFor("symbol",false,true)||checkFor("const",false,true)){
+            if (checkFor("(",false,false)){
+                functionCall();
+            }
 
         }else {
             err("缺少因子");
+        }
+    }
+
+    private void functionCall(){
+        if(checkFor("(")){
+            arithmeticExpression();
+            if (checkFor(")")){
+
+            }
         }
     }
 
@@ -339,5 +364,26 @@ public class SyntaxAnalyzer {
        return checkFor(s,true,true);
     }
 
+    private void back(){
+        len--;
+        len--;
+        len--;
+        getNextTaken();
+        if(token==Compiler.symbolMap.get("EOLN")){
+            back();
+        }
+    }
+
+    /**
+     * 从文件里读取token
+     */
+    private void readFromFile(){
+        try {
+            String s = reader.readLine();
+            fileLines.add(Integer.parseInt(s.substring(17)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }
