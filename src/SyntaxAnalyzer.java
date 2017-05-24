@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by qianzise on 2017/4/29 0029.
+ * 语法分析器
  */
 public class SyntaxAnalyzer {
     private BufferedReader reader = null;
@@ -11,7 +11,8 @@ public class SyntaxAnalyzer {
     private List<Integer> fileLines=new ArrayList<>();
 
     private int token;
-    private int len=1;
+    private int len=1;//当前检测的行(dyd文件中的行数)
+    private int line=1;//当前检测行数(报错用的准确行数)
 
     public void openLexFile() {
         File file = new File(LexicalAnalysis.FILE);
@@ -174,7 +175,7 @@ public class SyntaxAnalyzer {
     }
 
     private void funcD(){
-        if (checkFor(";",false,false)){
+        if (checkFor(";",false,true)){
             exeStatement();
             funcD();
         }
@@ -245,7 +246,7 @@ public class SyntaxAnalyzer {
     }
 
     private void funcB(){
-        if (checkFor("-",false,false)){
+        if (checkFor("-",false,true)){
             term();
             funcB();
         }
@@ -353,7 +354,7 @@ public class SyntaxAnalyzer {
             return true;
         }else {
             if(errFlag){
-                err("行数:"+len+"缺少"+s);
+                err("行数:"+getLine()+"缺少"+s);
             }
             return false;
         }
@@ -384,6 +385,17 @@ public class SyntaxAnalyzer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+
+    private int getLine(){
+        int l=0;
+        for (int i=0;i<len-1;i++){
+            if (fileLines.get(i)==Compiler.symbolMap.get("EOLN")){
+                l++;
+            }
+        }
+        return l;
     }
 
 }

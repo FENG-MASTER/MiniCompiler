@@ -1,7 +1,7 @@
 import java.io.*;
 
 /**
- * Created by qianzise on 2017/4/27 0027.
+ * 词法分析器
  */
 
 public class LexicalAnalysis {
@@ -37,30 +37,30 @@ public class LexicalAnalysis {
                     }
                     if (c == '=') {
                         state = 5;
-                        printToFile("=", 12);
+                        printToFile("=", Compiler.symbolMap.get("="));
                         break;
                     }
                     if (c == '-') {
                         state = 6;
-                        printToFile("-", 18);
+                        printToFile("-", Compiler.symbolMap.get("-"));
                         state = 0;
                         break;
                     }
                     if (c == '*') {
                         state = 7;
-                        printToFile("*",19);
+                        printToFile("*",Compiler.symbolMap.get("*"));
                         state = 0;
                         break;
                     }
                     if (c == '(') {
                         state = 8;
-                        printToFile("(",21);
+                        printToFile("(",Compiler.symbolMap.get("("));
                         state = 0;
                         break;
                     }
                     if (c == ')') {
                         state = 9;
-                        printToFile(")",22);
+                        printToFile(")",Compiler.symbolMap.get(")"));
                         state = 0;
                         break;
                     }
@@ -78,7 +78,7 @@ public class LexicalAnalysis {
                     }
                     if (c == ';') {
                         state = 20;
-                        printToFile(";",23);
+                        printToFile(";",Compiler.symbolMap.get(";"));
                         state = 0;
                         break;
                     }
@@ -108,7 +108,7 @@ public class LexicalAnalysis {
                     } else {
                         state = 4;
                         last = i;
-                        printToFile(s.substring(first,last),11);
+                        printToFile(s.substring(first,last),Compiler.symbolMap.get("const"));
                         i--;
                         state = 0;
                         break;
@@ -116,19 +116,19 @@ public class LexicalAnalysis {
                 case 10:
                     if (c == '=') {
                         state = 11;
-                        printToFile("<=",14);
+                        printToFile("<=",Compiler.symbolMap.get("<="));
                         state = 0;
                         break;
                     }
                     if (c == '>') {
                         state = 12;
-                        printToFile("<>",13);
+                        printToFile("<>",Compiler.symbolMap.get("<>"));
                         state = 0;
                         break;
                     }
                 {
                     state = 13;
-                    printToFile("<",15);
+                    printToFile("<",Compiler.symbolMap.get("<"));
                     i--;
                     state = 0;
                     break;
@@ -137,19 +137,19 @@ public class LexicalAnalysis {
                 case 14:
                     if (c == '=') {
                         state = 15;
-                        printToFile(">=",16);
+                        printToFile(">=",Compiler.symbolMap.get(">="));
                         state = 0;
                         break;
                     }
                     state = 16;
-                    printToFile(">",17);
+                    printToFile(">",Compiler.symbolMap.get(">"));
                     i--;
                     state = 0;
                     break;
                 case 17:
                     if (c == '=') {
                         state = 18;
-                        printToFile(":=",20);
+                        printToFile(":=",Compiler.symbolMap.get(":="));
                         state = 0;
                         break;
                     }
@@ -171,25 +171,25 @@ public class LexicalAnalysis {
    private void analise(String s, int first, int last){
         String ss=s.substring(first,last);
         if(ss.equals("begin")){
-            printToFile(ss,1);
+            printToFile(ss,Compiler.symbolMap.get("begin"));
         }else if(ss.equals("end")){
-            printToFile(ss,2);
+            printToFile(ss,Compiler.symbolMap.get("end"));
         }else if(ss.equals("integer")){
-            printToFile(ss,3);
+            printToFile(ss,Compiler.symbolMap.get("integer"));
         }else if(ss.equals("if")){
-            printToFile(ss,4);
+            printToFile(ss,Compiler.symbolMap.get("if"));
         }else if(ss.equals("then")){
-            printToFile(ss,5);
+            printToFile(ss,Compiler.symbolMap.get("then"));
         }else if(ss.equals("else")){
-            printToFile(ss,6);
+            printToFile(ss,Compiler.symbolMap.get("else"));
         }else if(ss.equals("function")){
-            printToFile(ss,7);
+            printToFile(ss,Compiler.symbolMap.get("function"));
         }else if(ss.equals("read")){
-            printToFile(ss,8);
+            printToFile(ss,Compiler.symbolMap.get("read"));
         }else if(ss.equals("write")){
-            printToFile(ss,9);
+            printToFile(ss,Compiler.symbolMap.get("write"));
         }else{
-            printToFile(ss,10);
+            printToFile(ss,Compiler.symbolMap.get("symbol"));
         }
 
     }
@@ -221,6 +221,10 @@ public class LexicalAnalysis {
     private void printErrToFile(int line, int i) {
         errWriter.printf("***LINE:%d  %d\n", line, i);
         errWriter.flush();
+    }
+
+    public void printfEND(){
+        printToFile("EOF",25);
     }
 
 }
