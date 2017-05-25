@@ -1,6 +1,10 @@
+import com.sun.istack.internal.Nullable;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
+import java.util.function.Consumer;
 
 /**
  * 语法分析器
@@ -8,13 +12,30 @@ import java.util.List;
 public class SyntaxAnalyzer {
     private BufferedReader reader = null;
 
-    private List<Integer> fileLines=new ArrayList<>();
+    private List<TwoUnit> fileLines=new ArrayList<>();
 
-    private int token;
+    public static String FILE = "F://A/a.dys";
+    public static String ERRFILE = "F://A/SyntaxAnalyzer.err";
+    public static String VARFILE="F://A/a.var";
+    public static String PROFILE="F://A/a.pro";
+
+    private PrintWriter errWriter;
+    private FileOutputStream out;
+    private boolean errflag=false;
+
+    private Stack<Func> funcStack=new Stack<>();//函数栈,用于函数嵌套的时候,栈顶就是当前所在函数名.栈大小-1即为层数
+
+    private PrintWriter varWriter;
+    private PrintWriter prowriter;
+
+    private int varadr=0;
+
+
+    private TwoUnit token;
     private int len=1;//当前检测的行(dyd文件中的行数)
     private int line=1;//当前检测行数(报错用的准确行数)
 
-    public void openLexFile() {
+    private void openLexFile() {
         File file = new File(LexicalAnalysis.FILE);
         try {
             reader = new BufferedReader(new FileReader(file));
@@ -22,9 +43,35 @@ public class SyntaxAnalyzer {
             e.printStackTrace();
         }
 
+
+    }
+
+    public void start(){
+        init();
         getNextTaken();
         program2SubProgram();
+
+        if (!errflag){
+            saveToFile();
+        }
     }
+
+
+    public void init(){
+        openLexFile();
+
+        try {
+            errWriter=new PrintWriter(new FileWriter(new File(ERRFILE)));
+            out=new FileOutputStream(new File(FILE));
+            varWriter=new PrintWriter(new FileWriter(new File(VARFILE)));
+            prowriter=new PrintWriter(new FileWriter(new File(PROFILE)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
 
 
     /**
@@ -50,6 +97,7 @@ public class SyntaxAnalyzer {
      * <程序>→<分程序>
      */
     private void program2SubProgram() {
+        funcStack.push(new Func("main","void",0));
         subProgram();
     }
 
@@ -111,7 +159,7 @@ public class SyntaxAnalyzer {
      */
     private void variableDeclaration() {
 
-            var();
+            var(true);
 
     }
 
@@ -119,9 +167,20 @@ public class SyntaxAnalyzer {
      * <变量>→<标识符>
      */
     private void var() {
-        if (checkFor("symbol")){
+        var(false);
+    }
 
+    private void var(boolean dec) {
+        if (dec){
+            if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,0,"ints",funcStack.size()-1))){
+
+            }
+        }else {
+            if (checkFor("symbol")){
+
+            }
         }
+
     }
 
     /**
@@ -130,12 +189,16 @@ public class SyntaxAnalyzer {
     private void functionalDeclaration() {
 
             if (checkFor("function")){
-                if (checkFor("symbol")){
+                if (checkFor("symbol", true, true, s -> funcStack.push(new Func(s,"ints",funcStack.size())))){
                     if (checkFor("(")){
-                        var();
+                        funcStack.peek().fadr=varadr;
+                        parm();
+                        funcStack.peek().ladr=varadr;
                         if (checkFor(")")){
                             if (checkFor(";")){
+                                savePro(funcStack.peek());
                                 function();
+                                funcStack.pop();
                             }
                         }
                     }
@@ -148,7 +211,9 @@ public class SyntaxAnalyzer {
      * <参数>→<变量>
      */
     private void parm() {
-        var();
+        if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,1,"ints",funcStack.size()-1))){
+
+        }
     }
 
     /**
@@ -343,11 +408,16 @@ public class SyntaxAnalyzer {
     }
 
     private void err(String s){
+        printErrToFile(getLine(),s);
+        errflag=true;
         System.out.printf(s+"\n");
     }
 
-    private boolean checkFor(String s,boolean errFlag,boolean nextFlag){
-        if(token==Compiler.symbolMap.get(s)){
+    private boolean checkFor(String s, boolean errFlag, boolean nextFlag,@Nullable Consumer<String> c){
+        if(token.num==Compiler.symbolMap.get(s)){
+            if (c!=null){
+                c.accept(token.name);
+            }
             if(nextFlag){
                 getNextTaken();
             }
@@ -360,6 +430,9 @@ public class SyntaxAnalyzer {
         }
 
     }
+    private boolean checkFor(String s, boolean errFlag, boolean nextFlag){
+        return checkFor(s,errFlag,nextFlag,null);
+    }
 
     private boolean checkFor(String s){
        return checkFor(s,true,true);
@@ -370,7 +443,7 @@ public class SyntaxAnalyzer {
         len--;
         len--;
         getNextTaken();
-        if(token==Compiler.symbolMap.get("EOLN")){
+        if(token.num==Compiler.symbolMap.get("EOLN")){
             back();
         }
     }
@@ -381,7 +454,7 @@ public class SyntaxAnalyzer {
     private void readFromFile(){
         try {
             String s = reader.readLine();
-            fileLines.add(Integer.parseInt(s.substring(17)));
+            fileLines.add(new TwoUnit(s.substring(0,17),Integer.parseInt(s.substring(17))));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -391,11 +464,50 @@ public class SyntaxAnalyzer {
     private int getLine(){
         int l=0;
         for (int i=0;i<len-1;i++){
-            if (fileLines.get(i)==Compiler.symbolMap.get("EOLN")){
+            if (fileLines.get(i).num==Compiler.symbolMap.get("EOLN")){
                 l++;
             }
         }
         return l;
     }
+
+    private void printErrToFile(int line, String s) {
+        errWriter.printf("***LINE:%d  %s\n", line, s);
+        errWriter.flush();
+    }
+
+
+    private void saveToFile(){
+        byte[] buff=new byte[1024];
+        try {
+            FileInputStream inputStream=new FileInputStream(new File(LexicalAnalysis.FILE));
+            int len=0;
+            while ((len=inputStream.read(buff))>0){
+                out.write(buff,0,len);
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void saveVar(String name,String pro,int kind,String type,int lev){
+        varWriter.printf("%16s%16s%16d%16s%16d%16d\n",name,pro,kind,type,lev,varadr++);
+        varWriter.flush();
+    }
+
+    private void savePro(String name,String type,int lev,int fadr,int ladr){
+        prowriter.printf("%16s%16s%16d%16d%16d\n",name,type,lev,fadr,ladr);
+        prowriter.flush();
+    }
+
+    private void savePro(Func func){
+        savePro(func.name,func.type,func.lev,func.fadr,func.ladr);
+
+    }
+
 
 }

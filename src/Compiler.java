@@ -83,7 +83,7 @@ public class Compiler {
         SyntaxAnalyzer syntaxAnalyzer=new SyntaxAnalyzer();
         Compiler compiler=new Compiler(analysis);
         compiler.openFile(fileName);
-        syntaxAnalyzer.openLexFile();
+        syntaxAnalyzer.start();
 
 
     }
