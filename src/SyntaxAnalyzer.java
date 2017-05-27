@@ -537,7 +537,7 @@ public class SyntaxAnalyzer {
     private boolean checkVarDef(String name){
         boolean flag=false;
         for (Var v:varDefList){
-            if (v.name.equals(name)){
+            if (v.name.equals(name)&&v.pro==funcStack.peek().name){
                 flag=true;
                 break;
             }
