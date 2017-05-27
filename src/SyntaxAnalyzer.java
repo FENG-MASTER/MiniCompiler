@@ -25,6 +25,9 @@ public class SyntaxAnalyzer {
 
     private Stack<Func> funcStack=new Stack<>();//函数栈,用于函数嵌套的时候,栈顶就是当前所在函数名.栈大小-1即为层数
 
+    private List<Var> varDefList=new ArrayList<>();
+    private List<Func> funcDefList=new ArrayList<>();
+
     private PrintWriter varWriter;
     private PrintWriter prowriter;
 
@@ -52,6 +55,8 @@ public class SyntaxAnalyzer {
         program2SubProgram();
 
         if (!errflag){
+            saveVar2File();
+            savePro2File();
             saveToFile();
         }
     }
@@ -176,7 +181,11 @@ public class SyntaxAnalyzer {
 
             }
         }else {
-            if (checkFor("symbol")){
+            if (checkFor("symbol", true, true, s -> {
+                if (!checkVarDef(s)){
+                    err("变量"+s+"未定义");
+                }
+            })){
 
             }
         }
@@ -336,14 +345,36 @@ public class SyntaxAnalyzer {
      * <因子>→<变量>│<常数>│<函数调用>
      */
     private void factor() {
-        if (checkFor("symbol",false,true)||checkFor("const",false,true)){
-            if (checkFor("(",false,false)){
-                functionCall();
+        final boolean[] funcFlag = {false};
+        final boolean[] varFlag = {false};
+
+        if (checkFor("const",false,true)){
+
+        }else if (checkFor("symbol", false, true, new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                varFlag[0] =checkVarDef(s);
+                funcFlag[0] =checkProDef(s);
+                if (!varFlag[0]&&!funcFlag[0]){
+                    err("符号"+s+"未定义");
+                }
             }
+        })){
+
+            if (checkFor("(",false,false)){
+                if (!funcFlag[0]&&varFlag[0]){
+                    err("变量无法当作函数调用");
+                }else {
+                    functionCall();
+                }
+            }
+
 
         }else {
             err("缺少因子");
         }
+
+
     }
 
     private void functionCall(){
@@ -408,6 +439,11 @@ public class SyntaxAnalyzer {
     }
 
     private void err(String s){
+        try {
+            s=new String(s.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         printErrToFile(getLine(),s);
         errflag=true;
         System.out.printf(s+"\n");
@@ -495,18 +531,53 @@ public class SyntaxAnalyzer {
 
 
     private void saveVar(String name,String pro,int kind,String type,int lev){
-        varWriter.printf("%16s%16s%16d%16s%16d%16d\n",name,pro,kind,type,lev,varadr++);
-        varWriter.flush();
+        varDefList.add(new Var(name,pro,kind,type,lev));
     }
 
-    private void savePro(String name,String type,int lev,int fadr,int ladr){
-        prowriter.printf("%16s%16s%16d%16d%16d\n",name,type,lev,fadr,ladr);
-        prowriter.flush();
+    private boolean checkVarDef(String name){
+        boolean flag=false;
+        for (Var v:varDefList){
+            if (v.name.equals(name)){
+                flag=true;
+                break;
+            }
+        }
+
+        return flag;
     }
+
+    private boolean checkProDef(String name){
+
+        boolean flag=false;
+        for (Func f:funcDefList){
+            if (f.name.equals(name)){
+                flag=true;
+                break;
+            }
+        }
+
+        return flag;
+    }
+
 
     private void savePro(Func func){
-        savePro(func.name,func.type,func.lev,func.fadr,func.ladr);
+        funcDefList.add(func);
 
+    }
+
+
+    private void saveVar2File(){
+        for (Var v: varDefList) {
+            varWriter.printf("%16s%16s%16d%16s%16d%16d\n",v.name,v.pro,v.kind,v.type,v.lev,varadr++);
+            varWriter.flush();
+        }
+    }
+
+    private void savePro2File(){
+        for(Func f:funcDefList){
+            prowriter.printf("%16s%16s%16d%16d%16d\n",f.name,f.type,f.lev,f.fadr,f.ladr);
+            prowriter.flush();
+        }
     }
 
 
