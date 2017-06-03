@@ -33,7 +33,7 @@ public class SyntaxAnalyzer {
 
     private int varadr=0;
 
-    private int parmNum=0;
+    private boolean parmFlag=false;
 
 
     private TwoUnit token;
@@ -181,7 +181,7 @@ public class SyntaxAnalyzer {
         if (dec){
             //变量定义
 
-            if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,funcStack.peek().lev==0?0:1,"ints",funcStack.size()-1))){
+            if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,0,"ints",funcStack.size()-1))){
 
             }
         }else {
@@ -215,11 +215,12 @@ public class SyntaxAnalyzer {
                     }
                 })){
                     if (checkFor("(")){
-                        parmNum=0;
+                        funcStack.peek().fadr=varDefList.size();
+                        parmFlag=true;
                         parm();
-                        funcStack.peek().fadr=varadr+parmNum>0?1:0;
-                        funcStack.peek().ladr=varadr+parmNum;
-                        parmNum=0;
+                        parmFlag=false;
+                        funcStack.peek().ladr=varDefList.size()-1;
+
                         if (checkFor(")")){
                             if (checkFor(";")){
                                 savePro(funcStack.peek());
@@ -238,13 +239,14 @@ public class SyntaxAnalyzer {
      */
     private void parm() {
 
-        if (checkFor("symbol", true, true)){
-            parmNum++;
+//        if (checkFor("symbol", true, true)){
+//            parmNum++;
+//        }
+
+        if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,1,"ints",funcStack.size()-1))){
+
         }
 
-//        if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,1,"ints",funcStack.size()-1))){
-//
-//        }
     }
 
     /**
@@ -562,11 +564,23 @@ public class SyntaxAnalyzer {
     }
 
     private boolean checkVarDef(String name){
+
+
         boolean flag=false;
         for (Var v:varDefList){
             if (v.name.equals(name)&&v.pro==funcStack.peek().name){
-                flag=true;
-                break;
+                if (parmFlag){
+                    if (v.kind==1){
+                        flag=true;
+                        break;
+                    }
+                }else {
+                    if (v.kind==0){
+                        flag=true;
+                        break;
+                    }
+                }
+
             }
         }
 
