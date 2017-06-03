@@ -33,6 +33,8 @@ public class SyntaxAnalyzer {
 
     private int varadr=0;
 
+    private int parmNum=0;
+
 
     private TwoUnit token;
     private int len=1;//当前检测的行(dyd文件中的行数)
@@ -213,9 +215,11 @@ public class SyntaxAnalyzer {
                     }
                 })){
                     if (checkFor("(")){
-                        funcStack.peek().fadr=varadr;
+                        parmNum=0;
                         parm();
-                        funcStack.peek().ladr=varadr;
+                        funcStack.peek().fadr=varadr+parmNum>0?1:0;
+                        funcStack.peek().ladr=varadr+parmNum;
+                        parmNum=0;
                         if (checkFor(")")){
                             if (checkFor(";")){
                                 savePro(funcStack.peek());
@@ -233,9 +237,14 @@ public class SyntaxAnalyzer {
      * <参数>→<变量>
      */
     private void parm() {
-        if (checkFor("symbol", true, true)){
 
+        if (checkFor("symbol", true, true)){
+            parmNum++;
         }
+
+//        if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,1,"ints",funcStack.size()-1))){
+//
+//        }
     }
 
     /**
