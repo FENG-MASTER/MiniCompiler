@@ -200,7 +200,18 @@ public class SyntaxAnalyzer {
     private void functionalDeclaration() {
 
             if (checkFor("function")){
-                if (checkFor("symbol", true, true, s -> funcStack.push(new Func(s,"ints",funcStack.size())))){
+                if (checkFor("symbol", true, true, new Consumer<String>() {
+                    @Override
+                    public void accept(String s) {
+                        if (checkProDef(s)){
+                            err("函数"+s+"重复定义");
+                            funcStack.push(new Func(s,"ints",funcStack.size()));
+                        }else {
+                            funcStack.push(new Func(s,"ints",funcStack.size()));
+                        }
+
+                    }
+                })){
                     if (checkFor("(")){
                         funcStack.peek().fadr=varadr;
                         parm();
@@ -565,6 +576,7 @@ public class SyntaxAnalyzer {
 
         return flag;
     }
+
 
 
     private void savePro(Func func){
