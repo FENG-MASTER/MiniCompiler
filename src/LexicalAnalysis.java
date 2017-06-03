@@ -9,8 +9,8 @@ public class LexicalAnalysis {
     private PrintWriter writer;
     private PrintWriter errWriter;
     public static String FILE = "F://A/a.dyd";
-    public static String ERRFILE = "F://A/a.err";
-   public void analysis(String s, int line) {
+    public static String ERRFILE = "F://A/a.LexicalAnalysis.err";
+    public void analysis(String s, int line) {
         int state = 0;
         int first = 0;
         int last = 0;
@@ -21,7 +21,7 @@ public class LexicalAnalysis {
 
             switch (state) {
                 case 0: {
-                    if (c == ' ') {
+                    if (c == ' '||c=='\t') {
                         state = 0;
                         break;
                     }

@@ -15,7 +15,7 @@ public class SyntaxAnalyzer {
     private List<TwoUnit> fileLines=new ArrayList<>();
 
     public static String FILE = "F://A/a.dys";
-    public static String ERRFILE = "F://A/SyntaxAnalyzer.err";
+    public static String ERRFILE = "F://A/a.SyntaxAnalyzer.err";
     public static String VARFILE="F://A/a.var";
     public static String PROFILE="F://A/a.pro";
 
@@ -177,7 +177,9 @@ public class SyntaxAnalyzer {
 
     private void var(boolean dec) {
         if (dec){
-            if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,0,"ints",funcStack.size()-1))){
+            //变量定义
+
+            if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,funcStack.peek().lev==0?0:1,"ints",funcStack.size()-1))){
 
             }
         }else {
@@ -220,7 +222,7 @@ public class SyntaxAnalyzer {
      * <参数>→<变量>
      */
     private void parm() {
-        if (checkFor("symbol", true, true, s -> saveVar(s,funcStack.peek().name,1,"ints",funcStack.size()-1))){
+        if (checkFor("symbol", true, true)){
 
         }
     }
@@ -531,7 +533,12 @@ public class SyntaxAnalyzer {
 
 
     private void saveVar(String name,String pro,int kind,String type,int lev){
-        varDefList.add(new Var(name,pro,kind,type,lev));
+        if(checkVarDef(name)){
+            err("重复定义变量"+name);
+        }else {
+            varDefList.add(new Var(name,pro,kind,type,lev));
+
+        }
     }
 
     private boolean checkVarDef(String name){
